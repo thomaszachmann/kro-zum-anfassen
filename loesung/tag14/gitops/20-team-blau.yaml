@@ -1,0 +1,9 @@
+apiVersion: lab.example.com/v1alpha1
+kind: NotesFleet
+metadata:
+  name: blau
+spec:
+  team: blau
+  environments:
+    - dev
+  basePort: 31100

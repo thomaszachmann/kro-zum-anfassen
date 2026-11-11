@@ -1,0 +1,63 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: notesapp
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: NotesApp
+    group: lab.example.com
+    spec:
+      image: string | default="ghcr.io/thomaszachmann/notes-api:0.5.1"
+      replicas: integer | default=1 minimum=1 maximum=5
+      apiKey: string | required=true minLength=12
+      nodePort: integer | required=true minimum=30000 maximum=32767
+  resources:
+    - id: secret
+      template:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: ${schema.metadata.name}-api
+        stringData:
+          apiKey: ${schema.spec.apiKey}
+    - id: deployment
+      template:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: ${schema.metadata.name}
+        spec:
+          replicas: ${schema.spec.replicas}
+          selector:
+            matchLabels:
+              app: ${schema.metadata.name}
+          template:
+            metadata:
+              labels:
+                app: ${schema.metadata.name}
+            spec:
+              containers:
+                - name: api
+                  image: ${schema.spec.image}
+                  ports:
+                    - containerPort: 8080
+                  env:
+                    - name: NOTES_API_KEY
+                      valueFrom:
+                        secretKeyRef:
+                          name: ${secret.metadata.name}
+                          key: apiKey
+    - id: service
+      template:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: ${schema.metadata.name}
+        spec:
+          type: NodePort
+          selector: ${deployment.spec.selector.matchLabels}
+          ports:
+            - port: 80
+              targetPort: 8080
+              nodePort: ${schema.spec.nodePort}

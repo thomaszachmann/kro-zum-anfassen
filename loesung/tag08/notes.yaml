@@ -1,0 +1,14 @@
+apiVersion: lab.example.com/v1alpha1
+kind: NotesApp
+metadata:
+  name: notes
+  namespace: app
+spec:
+  apiKey: lab-api-key-123
+  nodePort: 30080
+  networkPolicy: true
+  checks:
+    - name: health
+      path: /healthz
+    - name: version
+      path: /version

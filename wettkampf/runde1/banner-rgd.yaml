@@ -1,0 +1,26 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: banner
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: Banner
+    group: lab.example.com
+    spec:
+      text: string | required=true
+      urgent: boolean | default=false
+      ttlMinutes: integer | default=60
+  resources:
+    - id: config
+      template:
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: ${schema.metadata.name}-banner
+          namespace: platform
+          labels:
+            notes.lab/announcement: "true"
+        data:
+          text: ${schema.spec.urgent ? "DRINGEND: " + schema.spec.text : schema.spec.text}
+          ttl: ${schema.spec.ttlMinutes}

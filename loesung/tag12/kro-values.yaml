@@ -1,0 +1,6 @@
+rbac:
+  mode: aggregation
+config:
+  featureGates:
+    DeletionPolicy: true
+    InstanceConditionEvents: true

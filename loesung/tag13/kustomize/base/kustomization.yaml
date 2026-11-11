@@ -1,0 +1,7 @@
+resources:
+  - deployment.yaml
+  - service.yaml
+secretGenerator:
+  - name: notes-api
+    literals:
+      - apiKey=lab-api-key-123

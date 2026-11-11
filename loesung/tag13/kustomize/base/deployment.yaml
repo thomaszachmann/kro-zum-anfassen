@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notes
+  template:
+    metadata:
+      labels:
+        app: notes
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/thomaszachmann/notes-api:0.5.1
+          ports:
+            - containerPort: 8080
+          env:
+            - name: NOTES_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: notes-api
+                  key: apiKey

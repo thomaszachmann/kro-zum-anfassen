@@ -1,0 +1,8 @@
+apiVersion: lab.example.com/v1alpha1
+kind: Banner
+metadata:
+  name: umzug
+  namespace: app
+spec:
+  text: Umzug in den neuen Cluster am Montag
+  urgent: true

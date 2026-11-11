@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notes-platform
+  namespace: platform
+data:
+  image: ghcr.io/thomaszachmann/notes-api:0.5.1

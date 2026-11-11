@@ -1,0 +1,11 @@
+apiVersion: lab.example.com/v1alpha1
+kind: NotesSettings
+metadata:
+  name: blau
+  namespace: app
+spec:
+  team: team-blau
+  owner:
+    name: Ada
+    email: ada@example.com
+  ticket: OPS-1

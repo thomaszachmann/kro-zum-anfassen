@@ -1,0 +1,36 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kro:controller:notes
+  labels:
+    rbac.kro.run/aggregate-to-controller: "true"
+rules:
+  - apiGroups: ["lab.example.com"]
+    resources:
+      - notesapps
+      - notesapps/status
+      - notesfleets
+      - notesfleets/status
+      - notessettings
+      - notessettings/status
+    verbs: ["*"]
+  - apiGroups: [""]
+    resources:
+      - configmaps
+      - secrets
+      - services
+      - persistentvolumeclaims
+      - namespaces
+    verbs: ["*"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["*"]
+  - apiGroups: ["batch"]
+    resources: ["cronjobs"]
+    verbs: ["*"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["*"]
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["*"]

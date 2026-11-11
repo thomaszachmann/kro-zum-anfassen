@@ -1,0 +1,31 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: notesoverview
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: NotesOverview
+    group: lab.example.com
+    scope: Cluster
+    spec:
+      target: string | default="platform"
+    status:
+      total: ${size(apps)}
+      apps: ${apps.map(a, a.metadata.namespace + "/" + a.metadata.name).join(", ")}
+  resources:
+    - id: apps
+      externalRef:
+        apiVersion: lab.example.com/v1alpha1
+        kind: NotesApp
+        metadata:
+          selector: {}
+    - id: summary
+      template:
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: notes-overview
+          namespace: ${schema.spec.target}
+        data:
+          apps: ${apps.map(a, a.metadata.namespace + "/" + a.metadata.name).join(", ")}

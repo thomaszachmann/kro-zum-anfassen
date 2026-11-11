@@ -1,0 +1,19 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: greeting
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: Greeting
+    spec:
+      message: string
+  resources:
+    - id: config
+      template:
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: ${schema.metadata.name}
+        data:
+          message: ${schema.spec.message}

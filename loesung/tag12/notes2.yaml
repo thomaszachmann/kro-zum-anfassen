@@ -1,0 +1,8 @@
+apiVersion: lab.example.com/v1alpha1
+kind: NotesApp
+metadata:
+  name: notes2
+  namespace: app
+spec:
+  apiKey: lab-api-key-456
+  nodePort: 30082

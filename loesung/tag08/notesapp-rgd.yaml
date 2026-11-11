@@ -1,0 +1,273 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: notesapp
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: NotesApp
+    group: lab.example.com
+    types:
+      Check:
+        name: string | required=true pattern="^[a-z0-9-]+$"
+        path: string | required=true pattern="^/"
+    spec:
+      image: string | default="ghcr.io/thomaszachmann/notes-api:0.5.1"
+      replicas: integer | default=1 minimum=1 maximum=5
+      apiKey: string | required=true minLength=12
+      nodePort: integer | required=true minimum=30000 maximum=32767
+      database:
+        storage: string | default="1Gi"
+      networkPolicy: boolean | default=false
+      checks: "[]Check"
+    status:
+      availableReplicas: ${deployment.status.?availableReplicas.orValue(0)}
+      image: ${deployment.spec.template.spec.containers[0].image}
+      port: ${service.spec.ports[0].nodePort}
+      database: ${dbService.metadata.name}
+      storage: ${dbData.spec.resources.requests.storage}
+      checks: ${size(checkJobs)}
+      conditions:
+        - |-
+          ${runtime.newCondition({
+            type: 'Ready',
+            status: runtime.condition(schema, 'ResourcesReady').status,
+            reason: 'Lifecycle',
+            message: runtime.condition(schema, 'ResourcesReady').message
+          })}
+        - |-
+          ${runtime.newCondition({
+            type: 'ApiAvailable',
+            status: deployment.status.?availableReplicas.orValue(0) > 0 ? 'True' : 'False',
+            reason: 'AvailableReplicas',
+            message: string(deployment.status.?availableReplicas.orValue(0)) + ' von ' + string(schema.spec.replicas) + ' Pods bereit'
+          })}
+        - |-
+          ${checkJobs.map(j, runtime.newCondition({
+            type: 'Check-' + j.metadata.labels.check,
+            status: j.status.?lastSuccessfulTime.hasValue() ? 'True' : 'Unknown',
+            reason: 'CronJob',
+            message: j.spec.jobTemplate.spec.template.spec.containers[0].args[1]
+          }))}
+    additionalPrinterColumns:
+      - name: Replicas
+        type: integer
+        jsonPath: .spec.replicas
+      - name: Available
+        type: integer
+        jsonPath: .status.availableReplicas
+      - name: Port
+        type: integer
+        jsonPath: .status.port
+      - name: State
+        type: string
+        jsonPath: .status.state
+  resources:
+    - id: secret
+      template:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: ${schema.metadata.name}-api
+        stringData:
+          apiKey: ${schema.spec.apiKey}
+    - id: dbSecret
+      template:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: ${schema.metadata.name}-db
+        stringData:
+          password: ${random.seededString(24, schema.metadata.namespace + "/" + schema.metadata.name)}
+    - id: dbData
+      template:
+        apiVersion: v1
+        kind: PersistentVolumeClaim
+        metadata:
+          name: ${schema.metadata.name}-db-data
+          annotations:
+            kro.run/deletion-policy: Orphaned
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: ${schema.spec.database.storage}
+    - id: database
+      template:
+        apiVersion: apps/v1
+        kind: StatefulSet
+        metadata:
+          name: ${schema.metadata.name}-db
+        spec:
+          serviceName: ${schema.metadata.name}-db
+          replicas: 1
+          selector:
+            matchLabels:
+              app: ${schema.metadata.name}-db
+          template:
+            metadata:
+              labels:
+                app: ${schema.metadata.name}-db
+            spec:
+              containers:
+                - name: postgres
+                  image: postgres:18.6-alpine
+                  env:
+                    - name: POSTGRES_USER
+                      value: notes
+                    - name: POSTGRES_DB
+                      value: notes
+                    - name: POSTGRES_PASSWORD
+                      valueFrom:
+                        secretKeyRef:
+                          name: ${dbSecret.metadata.name}
+                          key: password
+                    - name: PGDATA
+                      value: /var/lib/postgresql/data/pgdata
+                  ports:
+                    - containerPort: 5432
+                  readinessProbe:
+                    exec:
+                      command: ["pg_isready", "-U", "notes", "-d", "notes"]
+                  volumeMounts:
+                    - name: data
+                      mountPath: /var/lib/postgresql/data
+              volumes:
+                - name: data
+                  persistentVolumeClaim:
+                    claimName: ${dbData.metadata.name}
+      readyWhen:
+        - ${database.status.?readyReplicas.orValue(0) == 1}
+    - id: dbService
+      template:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: ${database.metadata.name}
+        spec:
+          selector: ${database.spec.selector.matchLabels}
+          ports:
+            - port: 5432
+    - id: deployment
+      template:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: ${schema.metadata.name}
+        spec:
+          replicas: ${schema.spec.replicas}
+          selector:
+            matchLabels:
+              app: ${schema.metadata.name}
+          template:
+            metadata:
+              labels:
+                app: ${schema.metadata.name}
+            spec:
+              initContainers:
+                - name: migrate
+                  image: ${schema.spec.image}
+                  args: ["migrate"]
+                  env:
+                    - name: DB_PASSWORD
+                      valueFrom:
+                        secretKeyRef:
+                          name: ${dbSecret.metadata.name}
+                          key: password
+                    - name: NOTES_DB_URL
+                      value: postgres://notes:$(DB_PASSWORD)@${dbService.metadata.name}:5432/notes?sslmode=disable
+              containers:
+                - name: api
+                  image: ${schema.spec.image}
+                  ports:
+                    - containerPort: 8080
+                  env:
+                    - name: NOTES_API_KEY
+                      valueFrom:
+                        secretKeyRef:
+                          name: ${secret.metadata.name}
+                          key: apiKey
+                    - name: DB_PASSWORD
+                      valueFrom:
+                        secretKeyRef:
+                          name: ${dbSecret.metadata.name}
+                          key: password
+                    - name: NOTES_DB_URL
+                      value: postgres://notes:$(DB_PASSWORD)@${dbService.metadata.name}:5432/notes?sslmode=disable
+                  readinessProbe:
+                    httpGet:
+                      path: /healthz
+                      port: 8080
+      readyWhen:
+        - ${deployment.status.?availableReplicas.orValue(0) == deployment.spec.replicas}
+    - id: service
+      template:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: ${schema.metadata.name}
+        spec:
+          type: NodePort
+          selector: ${deployment.spec.selector.matchLabels}
+          ports:
+            - port: 80
+              targetPort: 8080
+              nodePort: ${schema.spec.nodePort}
+    - id: dbPolicy
+      includeWhen:
+        - ${schema.spec.networkPolicy}
+      template:
+        apiVersion: networking.k8s.io/v1
+        kind: NetworkPolicy
+        metadata:
+          name: ${database.metadata.name}
+        spec:
+          podSelector:
+            matchLabels: ${database.spec.selector.matchLabels}
+          policyTypes:
+            - Ingress
+          ingress:
+            - from:
+                - podSelector:
+                    matchLabels: ${deployment.spec.selector.matchLabels}
+              ports:
+                - port: 5432
+    - id: budget
+      includeWhen:
+        - ${schema.spec.replicas > 1}
+      template:
+        apiVersion: policy/v1
+        kind: PodDisruptionBudget
+        metadata:
+          name: ${schema.metadata.name}
+        spec:
+          minAvailable: 1
+          selector:
+            matchLabels: ${deployment.spec.selector.matchLabels}
+    - id: checkJobs
+      forEach:
+        - check: ${schema.spec.?checks.orValue([])}
+      template:
+        apiVersion: batch/v1
+        kind: CronJob
+        metadata:
+          name: ${schema.metadata.name + '-check-' + check.name}
+          labels:
+            check: ${check.name}
+        spec:
+          schedule: "* * * * *"
+          successfulJobsHistoryLimit: 1
+          failedJobsHistoryLimit: 1
+          jobTemplate:
+            spec:
+              backoffLimit: 0
+              template:
+                spec:
+                  restartPolicy: Never
+                  containers:
+                    - name: curl
+                      image: curlimages/curl:8.23.0
+                      args:
+                        - -fsS
+                        - http://${service.metadata.name}${check.path}

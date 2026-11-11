@@ -1,0 +1,44 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: notes-settings
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: NotesSettings
+    group: lab.example.com
+    shortNames:
+      - nset
+    types:
+      Contact:
+        name: string | required=true
+        email: string | pattern="^[^@ ]+@[^@ ]+$"
+    spec:
+      team: string | required=true pattern="^[a-z][a-z0-9-]*$" description="Team, dem die Instanz gehört"
+      logLevel: string | enum="debug,info,warn,error" default="info"
+      maxNotes: integer | default=100 minimum=1 maximum=10000
+      readOnly: boolean | default=false
+      tags: "[]string | uniqueItems=true maxItems=3"
+      labels: "map[string]string"
+      owner: Contact
+      ticket: string | immutable=true
+    additionalPrinterColumns:
+      - name: Team
+        type: string
+        jsonPath: .spec.team
+      - name: Log
+        type: string
+        jsonPath: .spec.logLevel
+      - name: State
+        type: string
+        jsonPath: .status.state
+  resources:
+    - id: config
+      template:
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: ${schema.metadata.name}-settings
+        data:
+          team: ${schema.spec.team}
+          logLevel: ${schema.spec.logLevel}

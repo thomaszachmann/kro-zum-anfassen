@@ -1,0 +1,29 @@
+apiVersion: kro.run/v1alpha1
+kind: Graph
+metadata:
+  name: quota-decorator
+  namespace: kro-system
+spec:
+  serviceAccountName: quota-decorator
+  nodes:
+    - id: namespaces
+      ref:
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          selector:
+            matchLabels:
+              notes.lab/quota: standard
+    - id: quotas
+      forEach:
+        - ns: ${namespaces}
+      template:
+        apiVersion: v1
+        kind: ResourceQuota
+        metadata:
+          name: standard
+          namespace: ${ns.metadata.name}
+        spec:
+          hard:
+            pods: "10"
+            requests.storage: 5Gi

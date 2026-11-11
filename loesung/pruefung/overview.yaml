@@ -1,0 +1,5 @@
+apiVersion: lab.example.com/v1alpha1
+kind: NotesOverview
+metadata:
+  name: alle
+spec: {}

@@ -1,0 +1,39 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: notesfleet
+spec:
+  schema:
+    apiVersion: v1alpha1
+    kind: NotesFleet
+    group: lab.example.com
+    scope: Cluster
+    spec:
+      team: string | required=true pattern="^[a-z][a-z0-9-]*$"
+      environments: "[]string | required=true minItems=1 maxItems=3"
+      basePort: integer | default=31000 minimum=30000 maximum=32700
+    status:
+      apps: ${apps.map(a, a.metadata.namespace + "=" + a.status.?state.orValue("?")).join(", ")}
+  resources:
+    - id: namespaces
+      forEach:
+        - env: ${schema.spec.environments}
+      template:
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: ${schema.spec.team + "-" + env}
+    - id: apps
+      forEach:
+        - idx: ${lists.range(size(schema.spec.environments))}
+      template:
+        apiVersion: lab.example.com/v1alpha1
+        kind: NotesApp
+        metadata:
+          name: notes
+          namespace: ${namespaces[idx].metadata.name}
+        spec:
+          apiKey: ${random.seededString(20, schema.metadata.name + "/" + schema.spec.environments[idx])}
+          nodePort: ${schema.spec.basePort + idx}
+      readyWhen:
+        - ${each.status.?state.orValue("") == "ACTIVE"}

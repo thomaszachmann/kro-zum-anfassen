@@ -1,0 +1,4 @@
+image: ghcr.io/thomaszachmann/notes-api:0.5.1
+replicas: 1
+apiKey: ""
+nodePort: 30090

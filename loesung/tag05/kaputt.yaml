@@ -1,0 +1,9 @@
+apiVersion: lab.example.com/v1alpha1
+kind: NotesApp
+metadata:
+  name: kaputt
+  namespace: app
+spec:
+  image: ghcr.io/thomaszachmann/notes-api:9.9.9
+  apiKey: lab-api-key-123
+  nodePort: 30081

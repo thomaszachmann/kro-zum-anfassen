@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wartung
+  namespace: platform
+  labels:
+    notes.lab/announcement: "true"
+data:
+  text: Samstag 10 Uhr Wartung

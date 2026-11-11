@@ -1,0 +1,10 @@
+apiVersion: lab.example.com/v1alpha1
+kind: NotesSettings
+metadata:
+  name: falsch
+  namespace: app
+spec:
+  team: Team_Rot
+  logLevel: verbose
+  maxNotes: 0
+  tags: [a, a]
