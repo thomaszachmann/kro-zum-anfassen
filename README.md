@@ -1,37 +1,36 @@
-# kro zum Anfassen – Begleitcode
+# kro hands-on – Companion Code
 
-Begleitcode zum Buch **kro zum Anfassen** – eigene Plattform-APIs für Kubernetes mit
-kro (Kube Resource Orchestrator): ResourceGraphDefinitions, SimpleSchema, CEL,
-Readiness, Collections, externe Referenzen, RGD-Chaining, Rechte und GitOps. Teil der
-Reihe IT-Trainingslager von Thomas Zachmann.
+Companion code for the book **kro hands-on** (German edition: *kro zum Anfassen*) – your own
+platform APIs for Kubernetes with kro (Kube Resource Orchestrator): ResourceGraphDefinitions,
+SimpleSchema, CEL, readiness, collections, external references, RGD chaining, permissions and
+GitOps. Part of Thomas Zachmann's IT Drills series.
 
-Buchseite: https://it-trainingslager.de/buecher/kro
+Book page: https://itdrills.com/books/kro · German edition: https://it-trainingslager.de/buecher/kro
 
-Der Code begleitet das Buch; Erklärungen und Übungen stehen im Buch. Die Dateien
-schreibst du im Buch selbst – hier liegen die fertigen Fassungen zum Vergleichen und
-die kaputten Dateien für den Wettkampf. Alle Schlüssel und Passwörter sind Laborwerte –
-nie in Produktion verwenden.
+The code accompanies the book; explanations and exercises are in the book. You write the files
+yourself as you work through the book – this repo holds the finished versions for comparison and
+the broken files for the competition. All keys and passwords are lab values – never use them in
+production.
 
-Getestet mit k3s 1.37.2, Helm 4.3.1, kro 0.10.0 und notes-api 0.5.1.
+Tested with k3s 1.37.2, Helm 4.3.1, kro 0.10.0 and notes-api 0.5.1.
 
-## Inhalt
+## Contents
 
-- `loesung/tagNN/` – fertige Dateien jedes Trainingstags (RGDs, Instanzen, Rollen,
-  Werte für das Chart, Helm-Chart und Kustomize-Variante an Tag 13)
-- `loesung/pruefung/` – Lösungen der Abschlussprüfung (Anhang B)
-- `wettkampf/rundeN/` – Dateien, mit denen die Runden in Tag 15 beginnen
-- `wettkampf/loesung/` – reparierte Fassungen
+- `loesung/tagNN/` – finished files of each training day (RGDs, instances, roles,
+  chart values, Helm chart and Kustomize variant on Day 13)
+- `loesung/pruefung/` – solutions to the final exam (Appendix B)
+- `wettkampf/rundeN/` – files the rounds of Day 15 start with
+- `wettkampf/loesung/` – repaired versions
 
-## Schnellstart
+## Quick start
 
 ```bash
 git clone https://github.com/thomaszachmann/kro-zum-anfassen.git ~/kro-lab/code
 diff ~/kro-lab/tag04/notesapp-rgd.yaml ~/kro-lab/code/loesung/tag04/notesapp-rgd.yaml
 ```
 
-Details stehen im Kapitel „Tag 0“ des Buchs.
+Details are in the book's "Day 0" chapter.
 
-## Lizenz
+## License
 
-Code: MIT (siehe LICENSE). Buchtexte, Abbildungen und Cover sind nicht Teil dieses Repos
-und nicht lizenziert.
+Code: MIT (see LICENSE). Book text, figures and cover are not part of this repo and are not licensed.
